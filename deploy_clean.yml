@@ -1,0 +1,63 @@
+name: Deploy TG bot to Yandex Cloud Functions
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  YC_FOLDER_ID: ${{ vars.YC_FOLDER_ID }}
+  YC_SA_ID: ${{ vars.YC_SA_ID }}
+  YC_FUNCTION_RUNTIME: python314
+  YC_FUNCTION_ENTRYPOINT: main.handler
+
+jobs:
+  deploy:
+    name: Deploy function
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve bot name
+        id: bot
+        shell: bash
+        env:
+          BOT_USERNAME: ${{ secrets.BOT_USERNAME }}
+        run: |
+          if [[ -z "$BOT_USERNAME" ]]; then
+            echo "Set repository secret 'BOT_USERNAME'." >&2
+            exit 1
+          fi
+
+          FUNCTION_NAME="$(echo "$BOT_USERNAME" | tr '[:upper:]' '[:lower:]' | tr -d '_')"
+
+          echo "bot_username=$BOT_USERNAME" >> "$GITHUB_OUTPUT"
+          echo "function_name=$FUNCTION_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to Yandex Cloud Functions
+        id: deploy
+        uses: yc-actions/yc-sls-function@v4
+        with:
+          yc-sa-id: ${{ env.YC_SA_ID }}
+          folder-id: ${{ env.YC_FOLDER_ID }}
+          function-name: ${{ steps.bot.outputs.function_name }}
+          runtime: ${{ env.YC_FUNCTION_RUNTIME }}
+          entrypoint: ${{ env.YC_FUNCTION_ENTRYPOINT }}
+          include: |
+            ./src
+          environment: |
+            BOT_TOKEN=${{ secrets.TG_BOT_TOKEN }}
+
+      - name: Summary
+        shell: bash
+        run: |
+          {
+            echo "## Deployment complete"
+            echo ""
+            echo "- Bot username: ${{ steps.bot.outputs.bot_username }}"
+            echo "- Function name: ${{ steps.bot.outputs.function_name }}"
+          } >> "$GITHUB_STEP_SUMMARY"
