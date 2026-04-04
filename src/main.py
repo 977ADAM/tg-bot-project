@@ -17,11 +17,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-TOKEN = os.getenv("TOKEN")
+TOKEN = os.getenv("TG_BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
 
 if not TOKEN:
-    raise ValueError("TOKEN не найден в .env")
+    raise ValueError("TG_BOT_TOKEN не найден в .env")
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
