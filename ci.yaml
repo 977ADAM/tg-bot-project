@@ -3,7 +3,7 @@ on:
   #  - workflows: deploy-tg-bot-workflow
   #    filter: 
   #      branches: ["master", "main"]
-  pull_request:
+  pull_request: 
     - workflows: deploy-tg-bot-workflow
       filter:
         source_branches: ["**", "!test**"]
