@@ -1,0 +1,51 @@
+name: Deploy to Yandex Cloud Functions
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - ".github/**"
+      - "README.md"
+  workflow_dispatch:
+
+env:
+  FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
+  SA_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+  FUNCTION_NAME: telegram-bot
+  FUNCTION_RUNTIME: python312
+  FUNCTION_ENTRYPOINT: main.handler
+  FUNCTION_MEMORY: "128Mb"
+  FUNCTION_TIMEOUT: "10s"
+  FUNCTION_SOURCEROOT: .
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy Function
+        id: sls-func
+        uses: yc-actions/yc-sls-function@v4
+        with:
+          yc-sa-id: ${{ env.SA_ID }}
+          folder-id: ${{ env.FOLDER_ID }}
+          function-name: ${{ env.FUNCTION_NAME }}
+          runtime: ${{ env.FUNCTION_RUNTIME }}
+          entrypoint: ${{ env.FUNCTION_ENTRYPOINT }}
+          memory: ${{ env.FUNCTION_MEMORY }}
+          execution-timeout: ${{ env.FUNCTION_TIMEOUT }}
+          source-root: ${{ env.FUNCTION_SOURCEROOT }}
+          include: .src/**
+          environment: |
+            TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}
+            WEBHOOK_SECRET=${{ secrets.WEBHOOK_SECRET }}
+
+      - name: Show deployed function id
+        run: echo "Function ID = ${{ steps.sls-func.outputs.function-id }}"
