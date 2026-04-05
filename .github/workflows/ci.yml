@@ -17,7 +17,7 @@ env:
   SA_ID: aje0a1tmhc2iqb8gt0g0
   FUNCTION_NAME: my-python-function
   FUNCTION_RUNTIME: python312
-  FUNCTION_ENTRYPOINT: index.handler
+  FUNCTION_ENTRYPOINT: main.handler
   FUNCTION_MEMORY: "128mb"
   FUNCTION_SOURCEROOT: .
 
