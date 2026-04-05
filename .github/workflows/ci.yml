@@ -19,7 +19,7 @@ env:
   FUNCTION_RUNTIME: python312
   FUNCTION_ENTRYPOINT: main.handler
   FUNCTION_MEMORY: "128mb"
-  FUNCTION_SOURCEROOT: .
+  FUNCTION_SOURCEROOT: "./src"
 
 jobs:
   deploy:
@@ -66,5 +66,5 @@ jobs:
           memory: ${{ env.FUNCTION_MEMORY }}
           source-root: ${{ env.FUNCTION_SOURCEROOT }}
           include: |
-            **/*.py
+            main.py
             requirements.txt
