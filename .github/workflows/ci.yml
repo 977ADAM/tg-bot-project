@@ -2,6 +2,7 @@ name: Deploy Yandex Cloud Function
 
 permissions:
   id-token: write
+  contents: read
 
 on:
   push:
