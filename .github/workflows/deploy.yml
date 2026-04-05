@@ -1,0 +1,72 @@
+name: Deploy Yandex Cloud Function
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  FOLDER_ID: b1g9af9onb4a6bkumt1j
+  SA_ID: aje0a1tmhc2iqb8gt0g0
+  FUNCTION_NAME: my-python-function
+  FUNCTION_RUNTIME: python312
+  FUNCTION_ENTRYPOINT: main.handler
+  FUNCTION_MEMORY: 128mb
+  FUNCTION_SOURCEROOT: ./src
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy function
+        id: sls-func
+        uses: yc-actions/yc-sls-function@v4
+        with:
+          yc-sa-id: ${{ env.SA_ID }}
+          folder-id: ${{ env.FOLDER_ID }}
+          function-name: ${{ env.FUNCTION_NAME }}
+          runtime: ${{ env.FUNCTION_RUNTIME }}
+          entrypoint: ${{ env.FUNCTION_ENTRYPOINT }}
+          memory: ${{ env.FUNCTION_MEMORY }}
+          source-root: ${{ env.FUNCTION_SOURCEROOT }}
+          execution-timeout: 5
+          environment: |
+            BOT_TOKEN=${{ secrets.TG_BOT_TOKEN }}
+            WEBHOOK_SECRET=${{ secrets.TG_WEBHOOK_SECRET }}
+          include: |
+            main.py
+            requirements.txt
+
+      - name: Register Telegram webhook
+        if: github.ref == 'refs/heads/main'
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_WEBHOOK_SECRET: ${{ secrets.TG_WEBHOOK_SECRET }}
+          FUNCTION_URL: https://functions.yandexcloud.net/${{ steps.sls-func.outputs.function-id }}
+        run: |
+          if [ -z "$TG_BOT_TOKEN" ]; then
+            echo "TG_BOT_TOKEN is not set"
+            exit 1
+          fi
+
+          if [ -z "$TG_WEBHOOK_SECRET" ]; then
+            echo "TG_WEBHOOK_SECRET is not set"
+            exit 1
+          fi
+
+          curl --fail --silent --show-error \
+            --request POST \
+            --url "https://api.telegram.org/bot${TG_BOT_TOKEN}/setWebhook" \
+            --data-urlencode "url=${FUNCTION_URL}" \
+            --data-urlencode "secret_token=${TG_WEBHOOK_SECRET}"
+
+          echo "Webhook set to ${FUNCTION_URL}"
