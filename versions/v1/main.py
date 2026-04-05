@@ -1,12 +1,13 @@
-#version: 2.0
+# version: 1.0
 import os
 import json
 import base64
 import logging
 
 from aiogram import Bot, Dispatcher, F
-from aiogram.types import Message, Update, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import Message, Update, CallbackQuery
 from aiogram.filters import Command
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -25,14 +26,12 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 
-def main_keyboard() -> ReplyKeyboardMarkup:
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="Ping"), KeyboardButton(text="Help")],
-        ],
-        resize_keyboard=True,
-        input_field_placeholder="Напиши сообщение или нажми кнопку",
-    )
+def main_keyboard():
+    builder = InlineKeyboardBuilder()
+    builder.button(text="Ping", callback_data="ping")
+    builder.button(text="Help", callback_data="help")
+    builder.adjust(2)
+    return builder.as_markup()
 
 
 def make_response(status_code: int, payload: dict) -> dict:
@@ -74,43 +73,42 @@ async def cmd_help(message: Message):
         "/start — показать приветствие\n"
         "/help — показать помощь\n"
         "/ping — ответить pong\n\n"
-        "Можно ещё просто написать любой текст.",
-        reply_markup=main_keyboard(),
+        "Можно ещё просто написать любой текст."
     )
 
 
 @dp.message(Command("ping"))
 async def cmd_ping(message: Message):
-    await message.answer("pong", reply_markup=main_keyboard())
+    await message.answer("pong")
 
 
-@dp.message(F.text.casefold() == "ping")
-async def btn_ping(message: Message):
-    await message.answer("pong", reply_markup=main_keyboard())
+@dp.callback_query(F.data == "ping")
+async def cb_ping(callback: CallbackQuery):
+    await callback.answer("pong")
+    if callback.message:
+        await callback.message.answer("pong")
 
 
-@dp.message(F.text.casefold() == "help")
-async def btn_help(message: Message):
-    await message.answer(
-        "Нажми:\n"
-        "/start — старт\n"
-        "/help — помощь\n"
-        "/ping — проверка",
-        reply_markup=main_keyboard(),
-    )
+@dp.callback_query(F.data == "help")
+async def cb_help(callback: CallbackQuery):
+    await callback.answer()
+    if callback.message:
+        await callback.message.answer(
+            "Нажми:\n"
+            "/start — старт\n"
+            "/help — помощь\n"
+            "/ping — проверка"
+        )
 
 
 @dp.message(F.text)
 async def echo_text(message: Message):
-    await message.answer(f"Ты написал: {message.text}", reply_markup=main_keyboard())
+    await message.answer(f"Ты написал: {message.text}")
 
 
 @dp.message()
 async def fallback_message(message: Message):
-    await message.answer(
-        "Я пока умею отвечать только на текстовые сообщения.",
-        reply_markup=main_keyboard(),
-    )
+    await message.answer("Я пока умею отвечать только на текстовые сообщения.")
 
 
 async def handler(event: dict, context):
