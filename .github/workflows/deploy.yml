@@ -41,7 +41,7 @@ jobs:
           execution-timeout: 5
           environment: |
             BOT_TOKEN=${{ secrets.TG_BOT_TOKEN }}
-            WEBHOOK_SECRET=${{ secrets.TG_WEBHOOK_SECRET }}
+            WEBHOOK_SECRET=${{ secrets.WEBHOOK_SECRET }}
           include: |
             main.py
             requirements.txt
@@ -50,7 +50,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
         env:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
-          TG_WEBHOOK_SECRET: ${{ secrets.TG_WEBHOOK_SECRET }}
+          TG_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
           FUNCTION_URL: https://functions.yandexcloud.net/${{ steps.sls-func.outputs.function-id }}
         run: |
           if [ -z "$TG_BOT_TOKEN" ]; then
